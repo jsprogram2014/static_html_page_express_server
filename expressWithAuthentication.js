@@ -27,21 +27,20 @@ app.use(express.json()); // Middleware to parse JSON request bodies
 
 app.use(session({ secret: "fingerpint" })); // Middleware to handle sessions
 
-// Middleware to authenticate users using JWT
-app.use("/auth", function auth(req, res, next) {
-  if (req.session.authorization) { // Get the authorization object stored in the session
-    token = req.session.authorization['accessToken']; // Retrieve the token from authorization object
-    jwt.verify(token, "access", (err, user) => { // Use JWT to verify token
-      if (!err) {
-        req.user = user;
-        next();
-      } else {
-        return res.status(403).json({ message: "User not authenticated" });
-      }
-    });
-  } else {
-    return res.status(403).json({ message: "User not logged in" });
+// Route to handle user registration
+app.post("/register", (req, res) => {
+  const username = req.body.username;
+  const password = req.body.password;
+
+  if (username && password) {
+    if (!doesExist(username)) {
+      users.push({ "username": username, "password": password });
+      return res.status(200).json({ message: "User successfully registered. Now you can login" });
+    } else {
+      return res.status(404).json({ message: "User already exists!" });
+    }
   }
+  return res.status(404).json({ message: "Unable to register user." });
 });
 
 // Route to handle user login
@@ -67,20 +66,21 @@ app.post("/login", (req, res) => {
   }
 });
 
-// Route to handle user registration
-app.post("/register", (req, res) => {
-  const username = req.body.username;
-  const password = req.body.password;
-
-  if (username && password) {
-    if (!doesExist(username)) {
-      users.push({ "username": username, "password": password });
-      return res.status(200).json({ message: "User successfully registered. Now you can login" });
-    } else {
-      return res.status(404).json({ message: "User already exists!" });
-    }
+// Middleware to authenticate users using JWT
+app.use("/auth", function auth(req, res, next) {
+  if (req.session.authorization) { // Get the authorization object stored in the session
+    token = req.session.authorization['accessToken']; // Retrieve the token from authorization object
+    jwt.verify(token, "access", (err, user) => { // Use JWT to verify token
+      if (!err) {
+        req.user = user;
+        next();
+      } else {
+        return res.status(403).json({ message: "User not authenticated" });
+      }
+    });
+  } else {
+    return res.status(403).json({ message: "User not logged in" });
   }
-  return res.status(404).json({ message: "Unable to register user." });
 });
 
 // Main endpoint to be accessed by authenticated users
